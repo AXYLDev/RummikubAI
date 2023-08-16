@@ -35,8 +35,8 @@ public:
 					}
 					else {
 						if (ot.color == t.color) {
-							int8_t delta = t.number - ot.number;
-							if (delta >= -2 && delta <= 2) *(uint8_t*)&color |= 1 << (delta + 2);
+							int8_t delta = (int8_t)t.number - (int8_t)ot.number;
+							if (delta >= -2 && delta <= 2) *(uint8_t*)&color |= 1ui8 << (delta + 2);
 						}
 						else if (ot.number == t.number) {
 							numberColorMask |= (uint8_t)ot.color;
@@ -44,15 +44,20 @@ public:
 					}
 				}
 			}
+			uint8_t numberCount = 0;
+			for (size_t i = 0; i < 5; i++) {
+				if ((uint8_t)color & (1ui8 << i)) {
+					numberCount++;
+					if (numberCount + jokerCount >= 3) break;
+				}
+				else numberCount = 0;
+			}
 			uint8_t colorCount = 0;
 			for (size_t i = 0; i < 4; i++)
 				if (numberColorMask & (1 << 4))
 					colorCount++;
 			// Check possible
-			if (!((uint8_t)color & ((uint8_t)Bit::Minus2 | (uint8_t)Bit::Minus1))
-				&& !((uint8_t)color & ((uint8_t)Bit::Minus1 | (uint8_t)Bit::Plus1))
-				&& !((uint8_t)color & ((uint8_t)Bit::Plus1 | (uint8_t)Bit::Plus2))
-				&& !(jokerCount == 1 && ((uint8_t)color & ~(uint8_t)Bit::Equal) != 0)
+			if (numberCount + jokerCount < 3
 				&& colorCount + jokerCount < 3)
 				return false;
 		}
@@ -65,7 +70,7 @@ public:
 		bool Null() { return sln.empty(); }
 	};
 	void MakeMove() {
-		for (size_t numTilesToPlay = m_hand.size(); numTilesToPlay > 1; numTilesToPlay--) {
+		for (size_t numTilesToPlay = m_hand.size(); numTilesToPlay > 0; numTilesToPlay--) {
 			auto move = ChooseN(m_tiles, m_hand, numTilesToPlay);
 			if (!move.Null()) {
 				std::cout << "Solution found:\n";
