@@ -25,11 +25,11 @@ public:
 				m_tiles.clear();
 				m_tiles.reserve(n);
 				for (size_t i = 0; i < sln.size(); i++) {
-					m_tiles.insert(m_tiles.end(), sln[i].begin(), sln[i].end());
+					m_tiles.insert(m_tiles.end(), sln[i].tiles.begin(), sln[i].tiles.end());
 					// Print solution
 					std::string out;
-					for (size_t j = 0; j < sln[i].size(); j++) {
-						out += (std::string)sln[i][j] + " ";
+					for (size_t j = 0; j < sln[i].tiles.size(); j++) {
+						out += (std::string)sln[i].tiles[j] + " ";
 					}
 					std::cout << out << "\n";
 				}
@@ -46,7 +46,7 @@ public:
 		}
 		m_hand.emplace_back(pickedUp[0]);
 	}
-	std::vector<std::vector<Tile>> ChooseN(std::vector<Tile> board, std::vector<Tile> hand, int n) {
+	std::vector<Run> ChooseN(std::vector<Tile> board, std::vector<Tile> hand, int n) {
 		if (n == 0) return IsValid(board);
 		for (size_t i = 0; i < hand.size() - n; i++) {
 			board.emplace_back(hand[i]);
@@ -54,148 +54,43 @@ public:
 			if (!sln.empty()) return sln;
 			board.pop_back();
 		}
-		return std::vector<std::vector<Tile>>();
+		return std::vector<Run>();
 	}
-	std::vector<std::vector<Tile>> IsValid(std::vector<Tile> board) {
-		std::vector<std::vector<Tile>> sln;
-		sln.emplace_back(std::vector<Tile>());
+	std::vector<Run> IsValid(std::vector<Tile> board) {
+		std::vector<Run> sln;
+		sln.emplace_back(Run());
 		return ShuffleBoard(sln, std::vector<Tile>(), board);
 	}
-	std::vector<std::vector<Tile>> ShuffleBoard(std::vector<std::vector<Tile>> sln, std::vector<Tile> board, std::vector<Tile> tiles) {
-		if (tiles.size() == 0) return sln.rbegin()->size() >= 3 ? sln : std::vector<std::vector<Tile>>();
+	std::vector<Run> ShuffleBoard(std::vector<Run> sln, std::vector<Tile> board, std::vector<Tile> tiles) {
+		if (tiles.size() == 0) return sln.rbegin()->tiles.size() >= 3 ? sln : std::vector<Run>();
 		for (size_t i = 0; i < tiles.size(); i++) {
 			board.emplace_back(tiles[i]);
 			Tile t = tiles[i];
+			// Store for if remove needed later
+			Run run = *sln.rbegin();
 			if (AddToSolution(sln, t)) {
 				tiles.erase(tiles.begin() + i);
 				auto osln = ShuffleBoard(sln, board, tiles);
 				if (!osln.empty()) return osln;
 				tiles.insert(tiles.begin() + i, t);
-				sln.rbegin()->pop_back();
-				if (sln.rbegin()->size() == 0 && sln.size() > 1) sln.pop_back();
+				// Remove from solution
+				if (sln.rbegin()->tiles.size() == 1 && sln.size() > 1) sln.pop_back();
+				else *sln.rbegin() = run;
 			}
 			board.pop_back();
 		}
-		return std::vector<std::vector<Tile>>();
+		return std::vector<Run>();
 	}
-	bool AddToSolution(std::vector<std::vector<Tile>>& sln, Tile t) {
-		std::vector<Tile>& run = sln[sln.size() - 1];
-		if (run.size() == 0 || t.color == Color::Joker
-			|| (run.size() == 1 && run[0].color == Color::Joker)) {
-			run.emplace_back(t);
-			return true;
-		}
-		if (run.size() == 1) {
-			// Create run by adding to last tile
-			if ((run[0].color == t.color && t.number == run[0].number + 1)
-				|| (run[0].number == t.number && run[0].color != t.color)) {
-				run.emplace_back(t);
-				return true;
-			}
-		} else {
-			// Add to existing run
-			// Joker?
-			if (run[0].color == Color::Joker) {
-				if (run.size() == 2) {
-					if ((run[1].color == t.color && t.number == run[1].number + 1)
-						|| (run[1].number == t.number && run[1].color != t.color)) {
-						run.emplace_back(t);
-						return true;
-					}
-				}
-				else {
-					// Is same color run?
-					if (run[1].color == run[2].color
-						&& t.color == run[1].color && t.number == run[1].number + run.size() - 1) {
-						run.emplace_back(t);
-						return true;
-					}
-					// Is same number run?
-					else if (run[1].number == run[2].number && t.number == run[1].number) {
-						if (run.size() < 4) {
-							size_t i;
-							for (i = 0; i < run.size(); i++)
-								if (run[i].color == t.color) break;
-							if (i == run.size()) {
-								run.emplace_back(t);
-								return true;
-							}
-						}
-					}
-				}
-			}
-			else if (run[1].color == Color::Joker) {
-				if (run.size() == 2) {
-					if ((run[0].color == t.color && t.number == run[0].number + 2)
-						|| (run[0].number == t.number && run[0].color != t.color)) {
-						run.emplace_back(t);
-						return true;
-					}
-				}
-				else {
-					// Is same color run?
-					if (run[0].color == run[2].color
-						&& t.color == run[0].color && t.number == run[0].number + run.size()) {
-						run.emplace_back(t);
-						return true;
-					}
-					// Is same number run?
-					else if (run[0].number == run[2].number && t.number == run[0].number) {
-						if (run.size() < 4) {
-							size_t i;
-							for (i = 0; i < run.size(); i++)
-								if (run[i].color == t.color) break;
-							if (i == run.size()) {
-								run.emplace_back(t);
-								return true;
-							}
-						}
-					}
-				}
-			}
-
-			// Not joker?
-			else {
-				// Is same color run?
-				if (run[0].color == run[1].color
-					&& t.color == run[0].color && t.number == run[0].number + run.size()) {
-					run.emplace_back(t);
-					return true;
-				}
-				// Is same number run?
-				else if (run[0].number == run[1].number && t.number == run[0].number) {
-					if (run.size() < 4) {
-						size_t i;
-						for (i = 0; i < run.size(); i++)
-							if (run[i].color == t.color) break;
-						if (i == run.size()) {
-							run.emplace_back(t);
-							return true;
-						}
-					}
-				}
-			}
-		}
-		if (run.size() >= 3) {
-			std::vector<Tile> newRun;
-			newRun.emplace_back(t);
-			sln.emplace_back(newRun);
-			return true;
-		}
-		else {
-			if (run.size() == 2) {
-				auto& lrun = sln[sln.size() - 2];
-				if (lrun.size() >= 4 && lrun[lrun.size() - 1].color == Color::Joker) {
-					run.emplace_back(lrun[lrun.size() - 1]);
-					lrun.erase(lrun.begin() + (lrun.size() - 1));
-				}
-				std::vector<Tile> newRun;
-				newRun.emplace_back(t);
-				sln.emplace_back(newRun);
+	bool AddToSolution(std::vector<Run>& sln, Tile t) {
+		Run& run = sln[sln.size() - 1];
+		if (!run.AddIfCan(t)) {
+			if (run.tiles.size() >= 3) {
+				sln.emplace_back(Run());
 				return true;
 			}
 			return false;
 		}
+		return true;
 	}
 
 	// Loop through turns
