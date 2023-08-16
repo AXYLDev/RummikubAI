@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-enum class Color : char {
+enum class Color : uint8_t {
 	Black = 1, Blue = 2, Red = 4, Yellow = 8, Joker
 };
 
@@ -37,6 +37,7 @@ struct Tile {
 
 struct Run {
 	Run() {}
+	Run(Tile t) : tiles{ t } {}
 
 	enum class Type : char {
 		None, SameColor, SameNumber
