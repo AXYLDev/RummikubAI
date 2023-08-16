@@ -38,10 +38,11 @@ public:
 		}
 		// No solution, ask to pick up tile
 		std::vector<Tile> pickedUp;
-		while (pickedUp.empty()) {
+		while (true) {
 			std::cout << "Cannot make a move, please pick up a tile and enter it.\n";
 			pickedUp = InputTileList();
-			std::cout << "Invalid tile.";
+			if (!pickedUp.empty()) break;
+			std::cout << "Invalid tile.\n";
 		}
 		m_hand.emplace_back(pickedUp[0]);
 	}
@@ -64,11 +65,14 @@ public:
 		if (tiles.size() == 0) return sln.rbegin()->size() >= 3 ? sln : std::vector<std::vector<Tile>>();
 		for (size_t i = 0; i < tiles.size(); i++) {
 			board.emplace_back(tiles[i]);
-			if (AddToSolution(sln, tiles[i])) {
+			Tile t = tiles[i];
+			if (AddToSolution(sln, t)) {
+				tiles.erase(tiles.begin() + i);
 				auto osln = ShuffleBoard(sln, board, tiles);
 				if (!osln.empty()) return osln;
+				tiles.insert(tiles.begin() + i, t);
 				sln.rbegin()->pop_back();
-				if (sln.rbegin()->size() == 0) sln.pop_back();
+				if (sln.rbegin()->size() == 0 && sln.size() > 1) sln.pop_back();
 			}
 			board.pop_back();
 		}
@@ -76,30 +80,99 @@ public:
 	}
 	bool AddToSolution(std::vector<std::vector<Tile>>& sln, Tile t) {
 		std::vector<Tile>& run = sln[sln.size() - 1];
-		if (run.size() == 0) {
+		if (run.size() == 0 || t.color == Color::Joker
+			|| (run.size() == 1 && run[0].color == Color::Joker)) {
 			run.emplace_back(t);
 			return true;
 		}
 		if (run.size() == 1) {
 			// Create run by adding to last tile
 			if ((run[0].color == t.color && t.number == run[0].number + 1)
-				|| (run[0].number == t.number && run[0].color == t.color)) {
+				|| (run[0].number == t.number && run[0].color != t.color)) {
 				run.emplace_back(t);
+				return true;
 			}
 		} else {
 			// Add to existing run
-			// Is same color run?
-			if (run[0].color == run[1].color
-				&& t.color == run[0].color && t.number == run.rbegin()->number + 1) {
-				run.emplace_back(t);
+			// Joker?
+			if (run[0].color == Color::Joker) {
+				if (run.size() == 2) {
+					if ((run[1].color == t.color && t.number == run[1].number + 1)
+						|| (run[1].number == t.number && run[1].color != t.color)) {
+						run.emplace_back(t);
+						return true;
+					}
+				}
+				else {
+					// Is same color run?
+					if (run[1].color == run[2].color
+						&& t.color == run[1].color && t.number == run[1].number + run.size() - 1) {
+						run.emplace_back(t);
+						return true;
+					}
+					// Is same number run?
+					else if (run[1].number == run[2].number && t.number == run[1].number) {
+						if (run.size() < 4) {
+							size_t i;
+							for (i = 0; i < run.size(); i++)
+								if (run[i].color == t.color) break;
+							if (i == run.size()) {
+								run.emplace_back(t);
+								return true;
+							}
+						}
+					}
+				}
 			}
-			// Is same number run?
-			else if (run[0].number == run[1].number && t.number == run[0].number) {
-				size_t i;
-				for (i = 0; i < run.size(); i++)
-					if (run[i].color == t.color) break;
-				if (i == run.size()) {
+			else if (run[1].color == Color::Joker) {
+				if (run.size() == 2) {
+					if ((run[0].color == t.color && t.number == run[0].number + 2)
+						|| (run[0].number == t.number && run[0].color != t.color)) {
+						run.emplace_back(t);
+						return true;
+					}
+				}
+				else {
+					// Is same color run?
+					if (run[0].color == run[2].color
+						&& t.color == run[0].color && t.number == run[0].number + run.size()) {
+						run.emplace_back(t);
+						return true;
+					}
+					// Is same number run?
+					else if (run[0].number == run[2].number && t.number == run[0].number) {
+						if (run.size() < 4) {
+							size_t i;
+							for (i = 0; i < run.size(); i++)
+								if (run[i].color == t.color) break;
+							if (i == run.size()) {
+								run.emplace_back(t);
+								return true;
+							}
+						}
+					}
+				}
+			}
+
+			// Not joker?
+			else {
+				// Is same color run?
+				if (run[0].color == run[1].color
+					&& t.color == run[0].color && t.number == run[0].number + run.size()) {
 					run.emplace_back(t);
+					return true;
+				}
+				// Is same number run?
+				else if (run[0].number == run[1].number && t.number == run[0].number) {
+					if (run.size() < 4) {
+						size_t i;
+						for (i = 0; i < run.size(); i++)
+							if (run[i].color == t.color) break;
+						if (i == run.size()) {
+							run.emplace_back(t);
+							return true;
+						}
+					}
 				}
 			}
 		}
@@ -110,6 +183,17 @@ public:
 			return true;
 		}
 		else {
+			if (run.size() == 2) {
+				auto& lrun = sln[sln.size() - 2];
+				if (lrun.size() >= 4 && lrun[lrun.size() - 1].color == Color::Joker) {
+					run.emplace_back(lrun[lrun.size() - 1]);
+					lrun.erase(lrun.begin() + (lrun.size() - 1));
+				}
+				std::vector<Tile> newRun;
+				newRun.emplace_back(t);
+				sln.emplace_back(newRun);
+				return true;
+			}
 			return false;
 		}
 	}
@@ -122,6 +206,7 @@ public:
 				<< "add - add tiles to board (from other's moves)\n";
 			std::string action;
 			std::cin >> action;
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			if (action == "move") {
 				MakeMove();
 			}

@@ -29,6 +29,10 @@ std::vector<Tile> InputTileList() {
 		case 'Y':
 			tile.color = Color::Yellow;
 			break;
+		case 'j':
+		case 'J':
+			tiles.emplace_back(Tile{ 0, Color::Joker });
+			continue;
 		default:
 			continue;
 		}

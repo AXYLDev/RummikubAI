@@ -2,7 +2,7 @@
 #include <cstdint>
 
 enum class Color : char {
-	Black, Blue, Red, Yellow
+	Black, Blue, Red, Yellow, Joker
 };
 
 struct Tile {
@@ -17,8 +17,10 @@ struct Tile {
 			out << "r"; break;
 		case Color::Yellow:
 			out << "y"; break;
+		case Color::Joker:
+			return "j";
 		}
-		out << number;
+		out << (int)number;
 		return out.str();
 	}
 	uint8_t number;
