@@ -45,3 +45,8 @@ std::vector<Tile> InputTileList() {
 
 	return tiles;
 }
+
+size_t Rand(size_t num) {
+	size_t r = size_t((float)rand() / RAND_MAX * num);
+	return r == num ? r - 1 : r;
+}

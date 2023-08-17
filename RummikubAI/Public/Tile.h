@@ -61,13 +61,13 @@ struct Run {
 				if (tiles.size() == 1 && tiles[0].color != Color::Joker) {
 					const auto t0 = tiles[0];
 					if (t0 == t) return false;
-					if (t0.color == t.color) {
-						type == Type::SameColor;
+					if (t0.color == t.color && t.number == t0.number + 1) {
+						type = Type::SameColor;
 						typeInfo.color.color = t.color;
 						typeInfo.color.number0 = t0.number;
 					}
-					else if (t0.number == t.number) {
-						type == Type::SameNumber;
+					else if (t0.number == t.number && t0.color != t.color) {
+						type = Type::SameNumber;
 						typeInfo.number.number = t.number;
 						typeInfo.number.colorMask = (uint8_t)t0.color | (uint8_t)t.color;
 					}
@@ -104,6 +104,7 @@ struct Run {
 						else return false;
 					}
 				}
+				break;
 			}
 			case Type::SameColor:
 				if (t.color != typeInfo.color.color
